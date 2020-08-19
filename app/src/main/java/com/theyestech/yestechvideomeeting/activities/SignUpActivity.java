@@ -93,6 +93,7 @@ public class SignUpActivity extends AppCompatActivity {
                 .add(user)
                 .addOnSuccessListener(documentReference -> {
                     preferenceManager.putBoolean(Constants.KEY_IS_SIGNED_IN, true);
+                    preferenceManager.putString(Constants.KEY_USER_ID, documentReference.getId());
                     preferenceManager.putString(Constants.KEY_FIRST_NAME, et_Firstname.getText().toString());
                     preferenceManager.putString(Constants.KEY_LAST_NAME, et_Lastname.getText().toString());
                     preferenceManager.putString(Constants.KEY_EMAIL, et_Email.getText().toString());
