@@ -1,0 +1,40 @@
+{
+  "project_info": {
+    "project_number": "466179277368",
+    "firebase_url": "https://yestech-video-meeting.firebaseio.com",
+    "project_id": "yestech-video-meeting",
+    "storage_bucket": "yestech-video-meeting.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:466179277368:android:6aacfe8f0e8e36c21ddccd",
+        "android_client_info": {
+          "package_name": "com.theyestech.yestechvideomeeting"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "466179277368-c4rujijif8r88ni4n82pfft7klkv9hj9.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAFFeNH8AKvn-IkizyMQNTGRdl9DWJv2e8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "466179277368-c4rujijif8r88ni4n82pfft7klkv9hj9.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

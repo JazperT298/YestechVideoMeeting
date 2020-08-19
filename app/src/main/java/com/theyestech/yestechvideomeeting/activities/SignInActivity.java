@@ -6,13 +6,14 @@ import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
-
 import com.theyestech.yestechvideomeeting.R;
+
 
 public class SignInActivity extends AppCompatActivity {
 
     private View view;
     private Context context;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
