@@ -3,6 +3,7 @@ package com.theyestech.yestechvideomeeting;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.RecyclerView;
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 import android.content.Context;
 import android.content.Intent;
@@ -26,6 +27,7 @@ import com.google.firebase.iid.FirebaseInstanceId;
 import com.google.firebase.iid.InstanceIdResult;
 import com.theyestech.yestechvideomeeting.activities.SignInActivity;
 import com.theyestech.yestechvideomeeting.adapters.UsersAdapter;
+import com.theyestech.yestechvideomeeting.listeners.UsersListener;
 import com.theyestech.yestechvideomeeting.models.Users;
 import com.theyestech.yestechvideomeeting.utils.Constants;
 import com.theyestech.yestechvideomeeting.utils.PreferenceManager;
@@ -35,7 +37,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity implements UsersListener {
 
     private View view;
     private Context context;
@@ -46,7 +48,8 @@ public class MainActivity extends AppCompatActivity {
     private List<Users> usersList;
     private UsersAdapter usersAdapter;
     private RecyclerView rv_Users;
-    private ProgressBar progressBar;
+    private SwipeRefreshLayout swipeRefreshLayout;
+    //private ProgressBar progressBar;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -72,11 +75,13 @@ public class MainActivity extends AppCompatActivity {
         });
         findViewById(R.id.tv_Logout).setOnClickListener(v -> logout());
         tv_ErrorMessage = findViewById(R.id.tv_ErrorMessage);
-        progressBar = findViewById(R.id.progressBar);
+        //progressBar = findViewById(R.id.progressBar);
+        swipeRefreshLayout = findViewById(R.id.swipeRefreshLayout);
         rv_Users = findViewById(R.id.rv_Users);
         usersList = new ArrayList<>();
-        usersAdapter = new UsersAdapter(usersList);
+        usersAdapter = new UsersAdapter(usersList, this);
         rv_Users.setAdapter(usersAdapter);
+        swipeRefreshLayout.setOnRefreshListener(this::getAllUsers);
 
         getAllUsers();
     }
@@ -102,14 +107,17 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void getAllUsers(){
-       progressBar.setVisibility(View.VISIBLE);
+       //progressBar.setVisibility(View.VISIBLE);
+        swipeRefreshLayout.setRefreshing(true);
        FirebaseFirestore firebaseFirestore = FirebaseFirestore.getInstance();
        firebaseFirestore.collection(Constants.KEY_COLLECTION_USERS)
                .get()
                .addOnCompleteListener(task -> {
-                    progressBar.setVisibility(View.GONE);
+                    //progressBar.setVisibility(View.GONE);
+                   swipeRefreshLayout.setRefreshing(false);
                     String userId = preferenceManager.getString(Constants.KEY_USER_ID);
                     if(task.isSuccessful() && task.getResult() != null){
+                        usersList.clear();
                         for(QueryDocumentSnapshot documentSnapshot : task.getResult()){
                             if(userId.equals(documentSnapshot.getId())){
                                 continue;
@@ -133,5 +141,23 @@ public class MainActivity extends AppCompatActivity {
                    }
                });
 
+    }
+
+    @Override
+    public void initiateVideoMeeting(Users users) {
+        if (users.token == null || users.token.trim().isEmpty()){
+            Toast.makeText(this, users.firstname + " " + users.lastname + "is not available for meeting", Toast.LENGTH_LONG).show();
+        }else{
+            Toast.makeText(this, "Video meeting with " + users.firstname + " " + users.lastname , Toast.LENGTH_LONG).show();
+        }
+    }
+
+    @Override
+    public void initiateAudioMeeting(Users users) {
+        if (users.token == null || users.token.trim().isEmpty()){
+            Toast.makeText(this, users.firstname + " " + users.lastname + "is not available for meeting", Toast.LENGTH_LONG).show();
+        }else{
+            Toast.makeText(this, "Audio meeting with " + users.firstname + " " + users.lastname , Toast.LENGTH_LONG).show();
+        }
     }
 }

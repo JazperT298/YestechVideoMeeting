@@ -10,15 +10,18 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.theyestech.yestechvideomeeting.R;
+import com.theyestech.yestechvideomeeting.listeners.UsersListener;
 import com.theyestech.yestechvideomeeting.models.Users;
 
 import java.util.List;
 
 public class UsersAdapter extends RecyclerView.Adapter<UsersAdapter.UsersViewHolder>{
     private List<Users> users;
+    private UsersListener usersListener;
 
-    public UsersAdapter(List<Users> users) {
+    public UsersAdapter(List<Users> users, UsersListener usersListener) {
         this.users = users;
+        this.usersListener = usersListener;
     }
 
     @NonNull
@@ -37,7 +40,7 @@ public class UsersAdapter extends RecyclerView.Adapter<UsersAdapter.UsersViewHol
         return users.size();
     }
 
-    static class UsersViewHolder extends RecyclerView.ViewHolder {
+    class UsersViewHolder extends RecyclerView.ViewHolder {
 
         TextView tv_FirstChar, tv_Username, tv_Email;
         ImageView iv_VideoMeeting, iv_AudioMeeting;
@@ -55,6 +58,8 @@ public class UsersAdapter extends RecyclerView.Adapter<UsersAdapter.UsersViewHol
             tv_FirstChar.setText(users.firstname.substring(0,1));
             tv_Username.setText(String.format("%s %s", users.firstname, users.lastname));
             tv_Email.setText(users.email);
+            iv_AudioMeeting.setOnClickListener(v -> usersListener.initiateAudioMeeting(users));
+            iv_VideoMeeting.setOnClickListener(v -> usersListener.initiateVideoMeeting(users));
         }
     }
 }
