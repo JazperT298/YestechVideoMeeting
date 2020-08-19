@@ -149,6 +149,16 @@
 
         </com.google.android.material.button.MaterialButton>
 
+        <ProgressBar
+            android:id="@+id/progressBar"
+            android:layout_width="@dimen/_25sdp"
+            android:layout_height="@dimen/_25sdp"
+            android:visibility="invisible"
+            app:layout_constraintTop_toTopOf="@+id/btn_SignIn"
+            app:layout_constraintBottom_toBottomOf="@+id/btn_SignIn"
+            app:layout_constraintEnd_toEndOf="@+id/btn_SignIn"
+            app:layout_constraintStart_toStartOf="@+id/btn_SignIn"/>
+
         <TextView
             android:id="@+id/textNoAccount"
             android:layout_width="match_parent"
