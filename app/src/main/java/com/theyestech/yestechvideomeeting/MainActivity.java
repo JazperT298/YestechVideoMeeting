@@ -25,6 +25,7 @@ import com.google.firebase.firestore.QueryDocumentSnapshot;
 import com.google.firebase.firestore.QuerySnapshot;
 import com.google.firebase.iid.FirebaseInstanceId;
 import com.google.firebase.iid.InstanceIdResult;
+import com.theyestech.yestechvideomeeting.activities.OutgoingInvitationActivity;
 import com.theyestech.yestechvideomeeting.activities.SignInActivity;
 import com.theyestech.yestechvideomeeting.adapters.UsersAdapter;
 import com.theyestech.yestechvideomeeting.listeners.UsersListener;
@@ -148,7 +149,10 @@ public class MainActivity extends AppCompatActivity implements UsersListener {
         if (users.token == null || users.token.trim().isEmpty()){
             Toast.makeText(this, users.firstname + " " + users.lastname + "is not available for meeting", Toast.LENGTH_LONG).show();
         }else{
-            Toast.makeText(this, "Video meeting with " + users.firstname + " " + users.lastname , Toast.LENGTH_LONG).show();
+            Intent intent = new Intent(context, OutgoingInvitationActivity.class);
+            intent.putExtra("users", users);
+            intent.putExtra("type", "video");
+            startActivity(intent);
         }
     }
 
