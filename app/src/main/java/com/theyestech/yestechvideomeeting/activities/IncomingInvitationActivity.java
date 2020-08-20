@@ -39,7 +39,7 @@ public class IncomingInvitationActivity extends AppCompatActivity {
 
     private ImageView iV_MeetingType, iv_AcceptInvitation, iv_RejectInvitation;
     private TextView tv_FirstChar, tv_Username, tv_Email;
-    private String meetingType;
+    private String meetingType = null;
     private Users users;
 
     private PreferenceManager preferenceManager;
@@ -51,14 +51,6 @@ public class IncomingInvitationActivity extends AppCompatActivity {
         setContentView(R.layout.activity_incoming_invitation);
         context = this;
         //users = (Users) getIntent().getSerializableExtra("users");
-        meetingType = getIntent().getStringExtra("type");
-        preferenceManager = new PreferenceManager(context);
-
-        FirebaseInstanceId.getInstance().getInstanceId().addOnCompleteListener(task -> {
-            if (task.isSuccessful() && task.getResult() != null) {
-                inviterToken = task.getResult().getToken();
-            }
-        });
         initializeUI();
     }
 
@@ -69,11 +61,22 @@ public class IncomingInvitationActivity extends AppCompatActivity {
         tv_FirstChar = findViewById(R.id.tv_FirstChar);
         tv_Username = findViewById(R.id.tv_Username);
         tv_Email = findViewById(R.id.tv_Email);
+
+        meetingType = getIntent().getStringExtra(Constants.REMOTE_MSG_MEETING_TYPE);
+        preferenceManager = new PreferenceManager(context);
         if (meetingType != null) {
             if (meetingType.equals("video")) {
                 iV_MeetingType.setImageResource(R.drawable.ic_video);
+            }else{
+                iV_MeetingType.setImageResource(R.drawable.ic_audio);
             }
         }
+
+        FirebaseInstanceId.getInstance().getInstanceId().addOnCompleteListener(task -> {
+            if (task.isSuccessful() && task.getResult() != null) {
+                inviterToken = task.getResult().getToken();
+            }
+        });
         String firstname = getIntent().getStringExtra(Constants.KEY_FIRST_NAME);
         if (firstname != null) {
             tv_FirstChar.setText(firstname.substring(0, 1));
@@ -118,12 +121,17 @@ public class IncomingInvitationActivity extends AppCompatActivity {
                             if (type.equals(Constants.REMOTE_MSG_INVITATION_ACCEPTED)) {
                                 try {
                                     URL serverURL = new URL("https://meet.jit.si");
-                                    JitsiMeetConferenceOptions conferenceOptions = new JitsiMeetConferenceOptions.Builder()
-                                            .setServerURL(serverURL).setWelcomePageEnabled(true).setRoom(getIntent().getStringExtra(Constants.REMOTE_MSG_MEETING_ROOM)).build();
-                                    JitsiMeetActivity.launch(context, conferenceOptions);
+                                    JitsiMeetConferenceOptions.Builder builder = new JitsiMeetConferenceOptions.Builder();
+                                    builder.setServerURL(serverURL);
+                                    builder.setWelcomePageEnabled(false);
+                                    builder.setRoom(getIntent().getStringExtra(Constants.REMOTE_MSG_MEETING_ROOM));
+                                    if(meetingType.equals("audio")){
+                                        builder.setVideoMuted(true);
+                                    }
+                                    JitsiMeetActivity.launch(context, builder.build());
                                     finish();
                                 }catch (Exception e){
-                                    Toast.makeText(context, e.getMessage(), Toast.LENGTH_LONG).show();
+                                    Toast.makeText(context,"FUCK " + e.getMessage(), Toast.LENGTH_LONG).show();
                                 }
                             } else {
                                 Toast.makeText(context, "Invitation rejected", Toast.LENGTH_LONG).show();

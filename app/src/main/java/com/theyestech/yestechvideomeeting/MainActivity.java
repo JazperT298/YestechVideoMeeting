@@ -161,7 +161,10 @@ public class MainActivity extends AppCompatActivity implements UsersListener {
         if (users.token == null || users.token.trim().isEmpty()){
             Toast.makeText(this, users.firstname + " " + users.lastname + "is not available for meeting", Toast.LENGTH_LONG).show();
         }else{
-            Toast.makeText(this, "Audio meeting with " + users.firstname + " " + users.lastname , Toast.LENGTH_LONG).show();
+            Intent intent = new Intent(context, OutgoingInvitationActivity.class);
+            intent.putExtra("users", users);
+            intent.putExtra("type", "audio");
+            startActivity(intent);
         }
     }
 }
