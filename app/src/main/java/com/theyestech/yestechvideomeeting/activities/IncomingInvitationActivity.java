@@ -1,18 +1,33 @@
 package com.theyestech.yestechvideomeeting.activities;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 
+import android.content.BroadcastReceiver;
 import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.ImageView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.google.firebase.iid.FirebaseInstanceId;
 import com.theyestech.yestechvideomeeting.R;
 import com.theyestech.yestechvideomeeting.models.Users;
+import com.theyestech.yestechvideomeeting.network.ApiClient;
+import com.theyestech.yestechvideomeeting.network.ApiService;
 import com.theyestech.yestechvideomeeting.utils.Constants;
 import com.theyestech.yestechvideomeeting.utils.PreferenceManager;
+
+import org.json.JSONArray;
+import org.json.JSONObject;
+
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
 
 public class IncomingInvitationActivity extends AppCompatActivity {
     private View view;
@@ -36,19 +51,14 @@ public class IncomingInvitationActivity extends AppCompatActivity {
         preferenceManager = new PreferenceManager(context);
 
         FirebaseInstanceId.getInstance().getInstanceId().addOnCompleteListener(task -> {
-            if(task.isSuccessful() && task.getResult() != null){
+            if (task.isSuccessful() && task.getResult() != null) {
                 inviterToken = task.getResult().getToken();
             }
         });
-    }
-
-    @Override
-    protected void onStart() {
-        super.onStart();
         initializeUI();
     }
 
-    private void initializeUI(){
+    private void initializeUI() {
         iV_MeetingType = findViewById(R.id.iV_MeetingType);
         iv_AcceptInvitation = findViewById(R.id.iv_AcceptInvitation);
         iv_RejectInvitation = findViewById(R.id.iv_RejectInvitation);
@@ -61,11 +71,88 @@ public class IncomingInvitationActivity extends AppCompatActivity {
             }
         }
         String firstname = getIntent().getStringExtra(Constants.KEY_FIRST_NAME);
-        if(firstname != null){
-            tv_FirstChar.setText(firstname.substring(0,1));
+        if (firstname != null) {
+            tv_FirstChar.setText(firstname.substring(0, 1));
         }
         tv_Username.setText(String.format("%s %s", firstname, getIntent().getStringExtra(Constants.KEY_LAST_NAME)));
         tv_Email.setText(getIntent().getStringExtra(Constants.KEY_EMAIL));
 
+        iv_AcceptInvitation.setOnClickListener(v -> sendInvitationResponse(Constants.REMOTE_MSG_INVITATION_ACCEPTED, getIntent().getStringExtra(Constants.REMOTE_MSG_INVITER_TOKEN)));
+        iv_RejectInvitation.setOnClickListener(v -> sendInvitationResponse(Constants.REMOTE_MSG_INVITATION_REJECTED, getIntent().getStringExtra(Constants.REMOTE_MSG_INVITER_TOKEN)));
+    }
+
+    private void sendInvitationResponse(String type, String receiverToken) {
+
+        try {
+            JSONArray tokens = new JSONArray();
+            tokens.put(receiverToken);
+
+            JSONObject body = new JSONObject();
+            JSONObject data = new JSONObject();
+
+            data.put(Constants.REMOTE_MSG_TYPE, Constants.REMOTE_MSG_INVITATION_RESPONSE);
+            data.put(Constants.REMOTE_MSG_INVITATION_RESPONSE, type);
+
+            body.put(Constants.REMOTE_MSG_DATA, data);
+            body.put(Constants.REMOTE_MSG_REGISTRATION_IDS, tokens);
+
+            sendRemoteMessage(body.toString(), type);
+
+        } catch (Exception e) {
+            Toast.makeText(context, e.getMessage(), Toast.LENGTH_LONG).show();
+            finish();
+        }
+
+    }
+
+    private void sendRemoteMessage(String remoteMessageBody, String type) {
+        ApiClient.getClient().create(ApiService.class).sendRemoteMessage(Constants.getRemoteMessageHeader(), remoteMessageBody)
+                .enqueue(new Callback<String>() {
+                    @Override
+                    public void onResponse(@NonNull Call<String> call, @NonNull Response<String> response) {
+                        if (response.isSuccessful()) {
+                            if (type.equals(Constants.REMOTE_MSG_INVITATION_ACCEPTED)) {
+                                Toast.makeText(context, "Invitation accepted", Toast.LENGTH_LONG).show();
+                            } else {
+                                Toast.makeText(context, "Invitation rejected", Toast.LENGTH_LONG).show();
+                            }
+                        } else {
+                            Toast.makeText(context, response.message(), Toast.LENGTH_LONG).show();
+                        }
+                        finish();
+                    }
+
+                    @Override
+                    public void onFailure(@NonNull Call<String> call, @NonNull Throwable t) {
+                        Toast.makeText(context, t.getMessage(), Toast.LENGTH_LONG).show();
+                        finish();
+                    }
+                });
+    }
+
+
+    private BroadcastReceiver invitationResponseReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            String type = intent.getStringExtra(Constants.REMOTE_MSG_INVITATION_RESPONSE);
+            if(type != null){
+                if(type.equals(Constants.REMOTE_MSG_INVITATION_CANCELLED)){
+                    Toast.makeText(context, "Invitation Cancelled", Toast.LENGTH_LONG).show();
+                    finish();
+                }
+            }
+        }
+    };
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+        LocalBroadcastManager.getInstance(context).registerReceiver(invitationResponseReceiver, new IntentFilter(Constants.REMOTE_MSG_INVITATION_RESPONSE));
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        LocalBroadcastManager.getInstance(context).unregisterReceiver(invitationResponseReceiver);
     }
 }
