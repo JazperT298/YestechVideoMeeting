@@ -9,6 +9,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
+import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -25,6 +26,7 @@ import com.google.firebase.firestore.QueryDocumentSnapshot;
 import com.google.firebase.firestore.QuerySnapshot;
 import com.google.firebase.iid.FirebaseInstanceId;
 import com.google.firebase.iid.InstanceIdResult;
+import com.google.gson.Gson;
 import com.theyestech.yestechvideomeeting.activities.OutgoingInvitationActivity;
 import com.theyestech.yestechvideomeeting.activities.SignInActivity;
 import com.theyestech.yestechvideomeeting.adapters.UsersAdapter;
@@ -44,12 +46,14 @@ public class MainActivity extends AppCompatActivity implements UsersListener {
     private Context context;
 
     private PreferenceManager preferenceManager;
-    private TextView tv_Title,tv_Logout, tv_ErrorMessage;
+    private TextView tv_Title, tv_Logout, tv_ErrorMessage;
 
     private List<Users> usersList;
     private UsersAdapter usersAdapter;
     private RecyclerView rv_Users;
     private SwipeRefreshLayout swipeRefreshLayout;
+    private ImageView iv_Conference;
+
     //private ProgressBar progressBar;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -66,11 +70,11 @@ public class MainActivity extends AppCompatActivity implements UsersListener {
         initializeUI();
     }
 
-    private void initializeUI(){
+    private void initializeUI() {
         tv_Title = findViewById(R.id.tv_Title);
-        tv_Title.setText(String.format("%s %s", preferenceManager.getString(Constants.KEY_FIRST_NAME),preferenceManager.getString(Constants.KEY_LAST_NAME)));
+        tv_Title.setText(String.format("%s %s", preferenceManager.getString(Constants.KEY_FIRST_NAME), preferenceManager.getString(Constants.KEY_LAST_NAME)));
         FirebaseInstanceId.getInstance().getInstanceId().addOnCompleteListener(task -> {
-            if(task.isSuccessful() && task.getResult() != null){
+            if (task.isSuccessful() && task.getResult() != null) {
                 sendFCMTokenToDatabase(task.getResult().getToken());
             }
         });
@@ -84,17 +88,19 @@ public class MainActivity extends AppCompatActivity implements UsersListener {
         rv_Users.setAdapter(usersAdapter);
         swipeRefreshLayout.setOnRefreshListener(this::getAllUsers);
 
+        iv_Conference = findViewById(R.id.iv_Conference);
+
         getAllUsers();
     }
 
-    private void sendFCMTokenToDatabase(String token){
+    private void sendFCMTokenToDatabase(String token) {
         FirebaseFirestore firebaseFirestore = FirebaseFirestore.getInstance();
         DocumentReference documentReference = firebaseFirestore.collection(Constants.KEY_COLLECTION_USERS).document(preferenceManager.getString(Constants.KEY_USER_ID));
         documentReference.update(Constants.KEY_FCM_TOKEN, token)
                 .addOnFailureListener(e -> Toast.makeText(context, "Unable to send Token : " + e.getMessage(), Toast.LENGTH_LONG).show());
     }
 
-    private void logout(){
+    private void logout() {
         Toast.makeText(context, "Signing out...", Toast.LENGTH_LONG).show();
         FirebaseFirestore firebaseFirestore = FirebaseFirestore.getInstance();
         DocumentReference documentReference = firebaseFirestore.collection(Constants.KEY_COLLECTION_USERS).document(preferenceManager.getString(Constants.KEY_USER_ID));
@@ -107,20 +113,20 @@ public class MainActivity extends AppCompatActivity implements UsersListener {
         }).addOnFailureListener(e -> Toast.makeText(context, "Unable to sign out", Toast.LENGTH_LONG).show());
     }
 
-    private void getAllUsers(){
-       //progressBar.setVisibility(View.VISIBLE);
+    private void getAllUsers() {
+        //progressBar.setVisibility(View.VISIBLE);
         swipeRefreshLayout.setRefreshing(true);
-       FirebaseFirestore firebaseFirestore = FirebaseFirestore.getInstance();
-       firebaseFirestore.collection(Constants.KEY_COLLECTION_USERS)
-               .get()
-               .addOnCompleteListener(task -> {
+        FirebaseFirestore firebaseFirestore = FirebaseFirestore.getInstance();
+        firebaseFirestore.collection(Constants.KEY_COLLECTION_USERS)
+                .get()
+                .addOnCompleteListener(task -> {
                     //progressBar.setVisibility(View.GONE);
-                   swipeRefreshLayout.setRefreshing(false);
+                    swipeRefreshLayout.setRefreshing(false);
                     String userId = preferenceManager.getString(Constants.KEY_USER_ID);
-                    if(task.isSuccessful() && task.getResult() != null){
+                    if (task.isSuccessful() && task.getResult() != null) {
                         usersList.clear();
-                        for(QueryDocumentSnapshot documentSnapshot : task.getResult()){
-                            if(userId.equals(documentSnapshot.getId())){
+                        for (QueryDocumentSnapshot documentSnapshot : task.getResult()) {
+                            if (userId.equals(documentSnapshot.getId())) {
                                 continue;
                             }
                             Users users = new Users();
@@ -130,25 +136,25 @@ public class MainActivity extends AppCompatActivity implements UsersListener {
                             users.token = documentSnapshot.getString(Constants.KEY_FCM_TOKEN);
                             usersList.add(users);
                         }
-                        if(usersList.size() > 0){
+                        if (usersList.size() > 0) {
                             usersAdapter.notifyDataSetChanged();
-                        }else{
+                        } else {
                             tv_ErrorMessage.setText(String.format("%s", "No users available"));
                             tv_ErrorMessage.setVisibility(View.VISIBLE);
                         }
-                    }else{
+                    } else {
                         tv_ErrorMessage.setText(String.format("%s", "No users available"));
                         tv_ErrorMessage.setVisibility(View.VISIBLE);
-                   }
-               });
+                    }
+                });
 
     }
 
     @Override
     public void initiateVideoMeeting(Users users) {
-        if (users.token == null || users.token.trim().isEmpty()){
+        if (users.token == null || users.token.trim().isEmpty()) {
             Toast.makeText(this, users.firstname + " " + users.lastname + "is not available for meeting", Toast.LENGTH_LONG).show();
-        }else{
+        } else {
             Intent intent = new Intent(context, OutgoingInvitationActivity.class);
             intent.putExtra("users", users);
             intent.putExtra("type", "video");
@@ -158,13 +164,31 @@ public class MainActivity extends AppCompatActivity implements UsersListener {
 
     @Override
     public void initiateAudioMeeting(Users users) {
-        if (users.token == null || users.token.trim().isEmpty()){
+        if (users.token == null || users.token.trim().isEmpty()) {
             Toast.makeText(this, users.firstname + " " + users.lastname + "is not available for meeting", Toast.LENGTH_LONG).show();
-        }else{
+        } else {
             Intent intent = new Intent(context, OutgoingInvitationActivity.class);
             intent.putExtra("users", users);
             intent.putExtra("type", "audio");
             startActivity(intent);
         }
     }
+
+    @Override
+    public void onMultipleUsersAction(Boolean isMultipleUsersSelected) {
+        if (isMultipleUsersSelected) {
+            iv_Conference.setVisibility(View.VISIBLE);
+            iv_Conference.setOnClickListener(v -> {
+                Intent intent = new Intent(context, OutgoingInvitationActivity.class);
+                intent.putExtra("selectedUsers", new Gson().toJson(usersAdapter.getSelectedUsers()));
+                intent.putExtra("type", "video");
+                intent.putExtra("isMultiple", true);
+                startActivity(intent);
+            });
+        } else {
+            iv_Conference.setVisibility(View.GONE);
+        }
+    }
+
+
 }
