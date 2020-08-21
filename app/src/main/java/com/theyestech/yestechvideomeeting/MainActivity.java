@@ -1,13 +1,20 @@
 package com.theyestech.yestechvideomeeting;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
+import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
+import android.os.PowerManager;
+import android.provider.Settings;
 import android.view.View;
 import android.widget.ImageView;
 import android.widget.ProgressBar;
@@ -54,6 +61,8 @@ public class MainActivity extends AppCompatActivity implements UsersListener {
     private SwipeRefreshLayout swipeRefreshLayout;
     private ImageView iv_Conference;
 
+    private int REQUEST_CODE_BATTERY_OPTIMIZATIONS = 1;
+
     //private ProgressBar progressBar;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -62,12 +71,8 @@ public class MainActivity extends AppCompatActivity implements UsersListener {
         context = this;
 
         preferenceManager = new PreferenceManager(context);
-    }
-
-    @Override
-    protected void onStart() {
-        super.onStart();
         initializeUI();
+        checkFOrBatteryOptimizations();
     }
 
     private void initializeUI() {
@@ -190,5 +195,27 @@ public class MainActivity extends AppCompatActivity implements UsersListener {
         }
     }
 
+    private void checkFOrBatteryOptimizations(){
+        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.M){
+            PowerManager powerManager = (PowerManager) getSystemService(POWER_SERVICE);
+            if(!powerManager.isIgnoringBatteryOptimizations(getPackageName())){
+                AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
+                builder.setTitle("Warning");
+                builder.setMessage("Battery optimization is enabled, It can interrupt running background services.");
+                builder.setPositiveButton("Disable", (dialog, which) -> {
+                    Intent intent = new Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS);
+                    startActivityForResult(intent, REQUEST_CODE_BATTERY_OPTIMIZATIONS);
+                });
+                builder.setNegativeButton("Cancel", (dialog, which) -> dialog.dismiss());
+            }
+        }
+    }
 
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if(requestCode == REQUEST_CODE_BATTERY_OPTIMIZATIONS){
+            checkFOrBatteryOptimizations();
+        }
+    }
 }
